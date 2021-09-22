@@ -8,31 +8,24 @@ let requestOptions = {
 
 let tab = "test4"
 
-// Initializing a global variable for datas
 let datas
 let filteredData = []
 
-// Setting card template & card container
 const cardContainer = document.querySelector('.card_container')
 let card = document.querySelector('.card')
 
 let allFilters = {
-    arrayTownFilter: ["Reset"],
+    arrayTownFilter: [],
     arrayBackgroundFilter: ["Reset"]
 }
-let filterIsSelected = false
 
-// Container for filters
 const townFilters = document.querySelector('.town_filter')
 const backgroundFilter = document.querySelector('.background_filter')
 
-// Variables for checkbox
 const checkboxTemplate = document.querySelector('.checkbox_template')
 
-// Variables for radio option
 const radioTemplate = document.querySelector('.radio_template')
 
-// Loader animation
 const loader = document.querySelector('.loader')
 let isLoading = true
 
@@ -45,11 +38,9 @@ const loading = () => {
 }
 loading()
 
-// Function to create elements
 let creatingElements = (arrayData) => {
     containerIsClear = false
 
-    // Deleting if cardContainer already have children
     if(cardContainer.children.length > 0) {
         while(cardContainer.children.length > 0) {
             cardContainer.removeChild(cardContainer.firstChild)
@@ -59,20 +50,15 @@ let creatingElements = (arrayData) => {
         containerIsClear = true
     }
 
-    // Creating the Clones
     for(i = 0; i < arrayData.length; i++) {
-        // Cloning the card template
         let cardCloned = card.cloneNode(true)
         cardCloned.classList.add("cardCloned")
 
-        // Puting the elements in the container
         cardContainer.appendChild(cardCloned)
     }
 
-    // Deleting the template
     card.remove()
 
-    // Selecting all the Clones
     let cardCloned = document.querySelectorAll('.cardCloned')
     let cardImage = document.querySelectorAll(".card_image")
     let cardTitle = document.querySelectorAll(".card_title")
@@ -82,7 +68,6 @@ let creatingElements = (arrayData) => {
 
     arrayData.forEach((element, key) => {
 
-        // Setting the datas for the card
         cardCloned[key].href = `/microview?id=${element.record_id}`
         cardCloned[key].style.backgroundColor = element.backgroundColor
         cardImage[key].src = element.image
@@ -93,82 +78,103 @@ let creatingElements = (arrayData) => {
     })
 }
 
+let filterSelected = []
+let radioFilter = []
+let noRadioFilter = false
 let activeFilter = (globalData, filteredData, _filter, _template, filterCloned, _filterType) => {
-    if(_filterType != "select") {
-        filterCloned.forEach(element => {
-            element.addEventListener('click', () => {
-                let filterSelected = []
-                filterSelected.push(element.children[1].textContent)
+    filterCloned.forEach(element => {
+        element.addEventListener('click', (e) => {
 
+            e.preventDefault()
+            if(element.children[0].checked == true && _filterType == "checkbox") {
+                element.children[0].checked = false
+                filterSelected = []
+                Object.values(filterCloned).filter(element => {
+                    if(element.children[0].checked == true) {
+                        filterSelected.push(element.children[1].textContent)
+                    }
+                })
+            } else {
+                element.children[0].checked = true
+                if (!filterSelected.find(filter => filter == element.children[1].textContent)){
+                    filterSelected.push(element.children[1].textContent)
+                } else {
+                    filterSelected = []
+                }
+            }
+
+            if(_filterType == "checkbox") {
                 if(filteredData.length == 0) {
                     globalData.some(data => {
-                        if(filterSelected.find(element => element == data[_filter])) {
+                        if(filterSelected.find(element => element.includes(data[_filter]))) {
                             filteredData.push(data)
                         }
                     })
                 } else {
-                    let emptyArray = []
-                    filteredData.some(data => {
-                        if(filterSelected.find(element => element == data[_filter])) {
-                            emptyArray.push(data)
-                        }
-                    })
-                    filteredData = emptyArray
+                    if(element.children[0].checked == true) {
+                        globalData.some(data => {
+                            if(filterSelected.find(element => element.includes(data[_filter])) && !filteredData.find(element => element == data)) {
+                                filteredData.push(data)
+                            }
+                        })
+                    } else {
+                        globalData.some(data => {
+                            if(!filterSelected.find(element => element.includes(data[_filter]))) {
+                                let index = filteredData.indexOf(data)
+                                if(index > -1) {
+                                    filteredData.splice(index, 1)
+                                }
+                            }
+                        })
+                    }
                 }
-                
-                if(filterSelected[0] == "Reset") {
-                    filteredData = []
-                    console.log(filteredData)
-                    creatingElements(globalData)
+            } else {
+                if(element.children[1].textContent == "Reset") {
+                    radioFilter = []
+                    noRadioFilter = false
                 } else {
-                    creatingElements(filteredData)
+                    if(filteredData.length == 0) {
+                        globalData.some(data => {
+                            if(filterSelected.find(element => element.includes(data[_filter]))) {
+                                filteredData.push(data)
+                            }
+                        })
+                    } else {
+                        radioFilter = []
+                        filterSelected = []
+                        filterCloned.forEach(element => {
+                            if(element.children[0].checked == true) {
+                                filterSelected.push(element.children[1].textContent)
+                            }
+                        })
+                        filteredData.some(data => {
+                            if(filterSelected.find(element => element.includes(data[_filter]))) {
+                                radioFilter.push(data)
+                            } else {
+                                noRadioFilter = true
+                            }
+                        })
+                    }
                 }
-                console.log(filteredData)
-            })
-        })
-    } else {
-        let selectValue = _template.value
-        _template.addEventListener('click', () => {
-            if(_template.value != selectValue) {
-                let filterSelected = []
-                console.log(filterSelected)
-                
-                if(filteredData.length > 0) {
-                    filteredData = []
-                }
+            }
 
-                filterSelected.push(_template.value)
-                
-                if(filteredData.length == 0) {
-                    globalData.some(data => {
-                        if(filterSelected.find(element => element == data[_filter])) {
-                            filteredData.push(data)
-                        }
-                    })
-                } else {
-                    let emptyArray = []
-                    filteredData.some(data => {
-                        if(filterSelected.find(element => element == data[_filter])) {
-                            emptyArray.push(data)
-                        }
-                    })
-                    filteredData = emptyArray
-                }
-                
-                if(_template.value == "Reset") {
-                    creatingElements(globalData)
-                } else {
+            if(filteredData.length > 0 && noRadioFilter == false) {
+                if(filterSelected.length > 0) {
                     creatingElements(filteredData)
+                } else {
+                    creatingElements(globalData)
                 }
-                selectValue = _template.value
+            } else if(radioFilter.length > 0 || noRadioFilter == true) {
+                creatingElements(radioFilter)
+            } else {
+                creatingElements(globalData)
             }
         })
-    }
+    })
 }
 
 let generationFilter = (globalData, _filterArray, _template, _filter, _filterContainer, _filterType) => {
     
-    // Filter generation in a empty array
     globalData.forEach(datas => {
         if(_filterArray.length == 0) {
             _filterArray.push(datas[_filter])
@@ -180,21 +186,16 @@ let generationFilter = (globalData, _filterArray, _template, _filter, _filterCon
     })
 
     if(_filterType != "select") {
-        // Creating the Clones
         for(i = 0; i < _filterArray.length; i++) {
-            // Cloning the filter template
             let filterClone = _template.cloneNode(true)
             filterClone.classList.add(`${_filter}Cloned`)
     
-            //Putting the elements in the container
             _filterContainer.appendChild(filterClone)
         }
     
-        // Deleting the template
         _template.remove()
     }
 
-    // Selecting all the Clones
     let filterCloned = document.querySelectorAll(`.${_filter}Cloned`)
     
     switch(_filterType) {
@@ -234,7 +235,6 @@ let generationFilter = (globalData, _filterArray, _template, _filter, _filterCon
     activeFilter(globalData, filteredData, _filter, _template, filterCloned, _filterType)
 }
 
-// Fetching the datas and creating filters
 fetch(`https://v1.nocodeapi.com/ncfnicolas/google_sheets/LyttnfRysyNvHeEr?tabId=${tab}`, requestOptions)
     .then(response => response.text())
     .then(result => {
@@ -243,10 +243,8 @@ fetch(`https://v1.nocodeapi.com/ncfnicolas/google_sheets/LyttnfRysyNvHeEr?tabId=
 
         creatingElements(parsedData)
 
-        // Generating townFilter
         generationFilter(parsedData, allFilters.arrayTownFilter, checkboxTemplate, "Ville", townFilters, "checkbox")
 
-        // Generating backgroundColorFilter
         generationFilter(parsedData, allFilters.arrayBackgroundFilter, radioTemplate, "backgroundColor", backgroundFilter, "radio")
 
         isLoading = false;
