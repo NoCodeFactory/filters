@@ -117,8 +117,8 @@ const filtering = (method, _filter) => {
     }
   }
   
-  let checked
   let checkingExist = (array, itemToCheck) => {
+    let checked
     for (h = 0; h < array.length; h++) {
       if(array[h].includes(itemToCheck)) {
         checked = true
@@ -176,9 +176,9 @@ let activeFilter = (
             comparaisonArray.splice(index, 1)
           }
   
-          if(element.length == 1) {
-            comparaisonArray.splice(index, 1)
-          }
+          // if(element.length == 1) {
+          //   comparaisonArray.splice(0, 1)
+          // }
         } else {
           elementUndefined = true
         }
@@ -196,18 +196,20 @@ let activeFilter = (
       } else {
         element.children[0].checked = true;
         if(_filterType == "checkbox") {
-            if (
-              !filterSelected.find(
-                filter => filter[0] == element.children[1].textContent
-              )
-            ) {
+            if(filterSelected.length == 0) {
               filterSelected = []
               filterSelected.push([element.children[1].textContent, _filter]);
+            } else {
+              if (!filterSelected.find(filter => filter[0] == element.children[1].textContent) && filterSelected[0][1] != _filter) {
+                filterSelected = []
+                filterSelected.push([element.children[1].textContent, _filter]);
+              } else {
+                filterSelected.push([element.children[1].textContent, _filter]);
+              }
             }
           } else {   
             if(filterSelected.length > 0) {
               if(filterSelected.find((element, index) => {
-                console.log(element)
                 element[0][1] == _filter
               })) {
                 filterSelected.splice(index, 1)
@@ -215,11 +217,10 @@ let activeFilter = (
             }
             filterSelected = []
             filterSelected.push([element.children[1].textContent, _filter])
-            console.log(filterSelected)
           }
         }
 
-      if(!elementUndefined) {
+      if(!elementUndefined || filterSelected.length > 0) {
         if(_filterType == "checkbox") {
           filtering("multi", _filter)
         } else {
