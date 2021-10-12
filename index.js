@@ -175,10 +175,6 @@ let activeFilter = (
           if(element[0] == _filter) {
             comparaisonArray.splice(index, 1)
           }
-  
-          // if(element.length == 1) {
-          //   comparaisonArray.splice(0, 1)
-          // }
         } else {
           elementUndefined = true
         }
