@@ -1,254 +1,344 @@
-let myHeaders = new Headers()
-myHeaders.append("Content-Type", "application/json")
+let myHeaders = new Headers();
+myHeaders.append("Content-Type", "application/json");
 let requestOptions = {
-    method: "get",
-    headers: myHeaders,
-    redirect: "follow",
-}
+  method: "get",
+  headers: myHeaders,
+  redirect: "follow"
+};
 
-let tab = "test4"
+let tab = "test1";
 
-let datas
-let filteredData = []
+let datas;
+let filteredData = [];
 
-const cardContainer = document.querySelector('.card_container')
-let card = document.querySelector('.card')
+const cardContainer = document.querySelector(".card_container");
+let card = document.querySelector(".card");
 
 let allFilters = {
-    arrayTownFilter: [],
-    arrayBackgroundFilter: ["Reset"]
-}
+  arrayTownFilter: [],
+  arrayBackgroundFilter: [],
+  arrayTag: []
+};
 
-const townFilters = document.querySelector('.town_filter')
-const backgroundFilter = document.querySelector('.background_filter')
+const townFilters = document.querySelector(".town_filter");
+const backgroundFilter = document.querySelector(".background_filter");
+const tagFilter = document.querySelector('.tag_filter')
 
-const checkboxTemplate = document.querySelector('.checkbox_template')
+const checkboxTemplate = document.querySelector(".checkbox_template");
+const radioTemplate = document.querySelector(".radio_template");
 
-const radioTemplate = document.querySelector('.radio_template')
-
-const loader = document.querySelector('.loader')
-let isLoading = true
+const loader = document.querySelector(".loader");
+let isLoading = true;
 
 const loading = () => {
-    if(isLoading == true) {
-        loader.classList.remove('d-none')
-    } else {
-        loader.classList.add('d-none')
+  if (isLoading) {
+    loader.classList.remove("d-none");
+  } else {
+    loader.classList.add("d-none");
+  }
+};
+loading();
+
+let creatingElements = arrayData => {
+  containerIsClear = false;
+
+  if (cardContainer.children.length > 0) {
+    while (cardContainer.children.length > 0) {
+      cardContainer.removeChild(cardContainer.firstChild);
     }
-}
-loading()
+    containerIsClear = true;
+  } else {
+    containerIsClear = true;
+  }
 
-let creatingElements = (arrayData) => {
-    containerIsClear = false
+  for (i = 0; i < arrayData.length; i++) {
+    if(typeof arrayData[i] != 'string') {
+      let cardCloned = card.cloneNode(true);
+      cardCloned.classList.add("cardCloned");
+  
+      cardContainer.appendChild(cardCloned);
+    }
+  }
 
-    if(cardContainer.children.length > 0) {
-        while(cardContainer.children.length > 0) {
-            cardContainer.removeChild(cardContainer.firstChild)
+  card.remove();
+
+  let cardCloned = document.querySelectorAll(".cardCloned");
+  let cardImage = document.querySelectorAll(".card_image");
+  let cardTitle = document.querySelectorAll(".card_title");
+  let cardDescription = document.querySelectorAll(".card_description");
+  let cardDate = document.querySelectorAll(".card_date");
+  let cardTag = document.querySelectorAll(".card_tag");
+
+  let fuuf = false
+  for (i = 0; i < arrayData.length; i++) {
+    if(typeof arrayData[i] != 'string') {
+      cardCloned[i - fuuf].href = `/pagetemplate?id=${arrayData[i].record_id}`;
+      cardCloned[i - fuuf].style.backgroundColor = arrayData[i].backgroundColor;
+      cardImage[i - fuuf].src = arrayData[i].image;
+      cardTitle[i - fuuf].textContent = arrayData[i].titre;
+      cardDate[i - fuuf].textContent = arrayData[i].date;
+      cardTag[i - fuuf].textContent = arrayData[i].tag;
+    } else {
+      fuuf = true      
+    }
+  }
+};
+
+let filterSelected = [];
+let comparaisonArray = [];
+const filtering = (method, _filter) => {
+  let transitionArray = [];
+  
+  let arrayFilter = []
+  if(method != "recheck" && filterSelected.length > 0) {
+    if(method == "multi") {
+      arrayFilter.push(_filter)
+      for(filterSelectedIndex = 0; filterSelectedIndex < filterSelected.length; filterSelectedIndex++) {
+        for(dataIndex = 0; dataIndex < datas.length; dataIndex++) {
+          if(filterSelected[filterSelectedIndex][0] == datas[dataIndex][filterSelected[filterSelectedIndex][1]]) {
+            if(!arrayFilter.find(item => item == datas[dataIndex])) {
+              arrayFilter.push(datas[dataIndex])
+            }
+          }
         }
-        containerIsClear = true
-    } else {
-        containerIsClear = true
-    }
-
-    for(i = 0; i < arrayData.length; i++) {
-        let cardCloned = card.cloneNode(true)
-        cardCloned.classList.add("cardCloned")
-
-        cardContainer.appendChild(cardCloned)
-    }
-
-    card.remove()
-
-    let cardCloned = document.querySelectorAll('.cardCloned')
-    let cardImage = document.querySelectorAll(".card_image")
-    let cardTitle = document.querySelectorAll(".card_title")
-    let cardDescription = document.querySelectorAll(".card_description")
-    let cardDate = document.querySelectorAll(".card_date")
-    let cardTag = document.querySelectorAll(".card_tag")
-
-    arrayData.forEach((element, key) => {
-
-        cardCloned[key].href = `/microview?id=${element.record_id}`
-        cardCloned[key].style.backgroundColor = element.backgroundColor
-        cardImage[key].src = element.image
-        cardTitle[key].textContent = element.titre
-        cardDescription[key].textContent = element.description
-        cardDate[key].textContent = element.date
-        cardTag[key].textContent = element.tag
-    })
-}
-
-let filterSelected = []
-let radioFilter = []
-let noRadioFilter = false
-let activeFilter = (globalData, filteredData, _filter, _template, filterCloned, _filterType) => {
-    filterCloned.forEach(element => {
-        element.addEventListener('click', (e) => {
-
-            e.preventDefault()
-            if(element.children[0].checked == true && _filterType == "checkbox") {
-                element.children[0].checked = false
-                filterSelected = []
-                Object.values(filterCloned).filter(element => {
-                    if(element.children[0].checked == true) {
-                        filterSelected.push(element.children[1].textContent)
-                    }
-                })
-            } else {
-                element.children[0].checked = true
-                if (!filterSelected.find(filter => filter == element.children[1].textContent)){
-                    filterSelected.push(element.children[1].textContent)
-                } else {
-                    filterSelected = []
-                }
-            }
-
-            if(_filterType == "checkbox") {
-                if(filteredData.length == 0) {
-                    globalData.some(data => {
-                        if(filterSelected.find(element => element.includes(data[_filter]))) {
-                            filteredData.push(data)
-                        }
-                    })
-                } else {
-                    if(element.children[0].checked == true) {
-                        globalData.some(data => {
-                            if(filterSelected.find(element => element.includes(data[_filter])) && !filteredData.find(element => element == data)) {
-                                filteredData.push(data)
-                            }
-                        })
-                    } else {
-                        globalData.some(data => {
-                            if(!filterSelected.find(element => element.includes(data[_filter]))) {
-                                let index = filteredData.indexOf(data)
-                                if(index > -1) {
-                                    filteredData.splice(index, 1)
-                                }
-                            }
-                        })
-                    }
-                }
-            } else {
-                if(element.children[1].textContent == "Reset") {
-                    radioFilter = []
-                    noRadioFilter = false
-                } else {
-                    if(filteredData.length == 0) {
-                        globalData.some(data => {
-                            if(filterSelected.find(element => element.includes(data[_filter]))) {
-                                filteredData.push(data)
-                            }
-                        })
-                    } else {
-                        radioFilter = []
-                        filterSelected = []
-                        filterCloned.forEach(element => {
-                            if(element.children[0].checked == true) {
-                                filterSelected.push(element.children[1].textContent)
-                            }
-                        })
-                        filteredData.some(data => {
-                            if(filterSelected.find(element => element.includes(data[_filter]))) {
-                                radioFilter.push(data)
-                            } else {
-                                noRadioFilter = true
-                            }
-                        })
-                    }
-                }
-            }
-
-            if(filteredData.length > 0 && noRadioFilter == false) {
-                if(filterSelected.length > 0) {
-                    creatingElements(filteredData)
-                } else {
-                    creatingElements(globalData)
-                }
-            } else if(radioFilter.length > 0 || noRadioFilter == true) {
-                creatingElements(radioFilter)
-            } else {
-                creatingElements(globalData)
-            }
-        })
-    })
-}
-
-let generationFilter = (globalData, _filterArray, _template, _filter, _filterContainer, _filterType) => {
+      }
+      comparaisonArray.push(arrayFilter)
     
-    globalData.forEach(datas => {
-        if(_filterArray.length == 0) {
-            _filterArray.push(datas[_filter])
+    } else if(method == "solo") {
+      arrayFilter.push(_filter)
+      for(dataIndex = 0; dataIndex < datas.length; dataIndex++) {
+        if(filterSelected[0][0] == datas[dataIndex][filterSelected[0][1]]) {
+          if(!arrayFilter.find(item => item == datas[dataIndex])) {
+            arrayFilter.push(datas[dataIndex])
+          }
+        }
+      }
+      comparaisonArray.push(arrayFilter)
+    }
+  }
+  
+  let checked
+  let checkingExist = (array, itemToCheck) => {
+    for (h = 0; h < array.length; h++) {
+      if(array[h].includes(itemToCheck)) {
+        checked = true
+      } else {
+        checked = false
+        break;
+      }
+    }
+    return checked
+  }
+
+  if(comparaisonArray.length >= 0) {
+    for(i = 0; i < comparaisonArray.length; i++) {
+      for(j = 0; j < comparaisonArray[i].length; j++) {
+        if(checkingExist(comparaisonArray, comparaisonArray[i][j])) {
+          if(!transitionArray.find(dataFiltered => dataFiltered == comparaisonArray[i][j])) {
+            transitionArray.push(comparaisonArray[i][j])
+          }
+        }
+      }
+    }
+  }
+
+  transitionArray.forEach((element, index) => {
+    if(typeof element === 'string') { 
+      transitionArray.splice(index, 1)
+    }
+  })
+
+  filteredData = transitionArray
+
+  let allFilters = document.querySelectorAll('.allFilters')
+  if(!Object.values(allFilters).find(element => element.children[0].checked)) {
+    creatingElements(datas)
+  } else {
+    creatingElements(filteredData)
+  }
+}
+
+let activeFilter = (
+  _filter,
+  _template,
+  filterCloned,
+  _filterType
+) => {
+  let buttonsOfTheFilter = document.querySelectorAll(`.${_filter}Cloned`);
+  filterCloned.forEach(element => {
+    element.addEventListener("click", e => {
+      e.preventDefault();
+      elementUndefined = false
+
+      comparaisonArray.find((element, index) => {
+        if(element != undefined) {
+          if(element[0] == _filter) {
+            comparaisonArray.splice(index, 1)
+          }
+  
+          if(element.length == 1) {
+            comparaisonArray.splice(index, 1)
+          }
         } else {
-            if(!_filterArray.find(element => element == datas[_filter])) {
-                _filterArray.push(datas[_filter])
-            }
+          elementUndefined = true
         }
+      })
+
+      if (element.children[0].checked) {
+        element.children[0].checked = false;
+        filterSelected = [];
+          Object.values(buttonsOfTheFilter).filter(element => {
+            if (element.children[0].checked) {
+              filterSelected.push([element.children[1].textContent, _filter]);
+            }
+          })
+          elementUndefined = true
+      } else {
+        element.children[0].checked = true;
+        if(_filterType == "checkbox") {
+            if (
+              !filterSelected.find(
+                filter => filter[0] == element.children[1].textContent
+              )
+            ) {
+              filterSelected = []
+              filterSelected.push([element.children[1].textContent, _filter]);
+            }
+          } else {   
+            if(filterSelected.length > 0) {
+              if(filterSelected.find((element, index) => {
+                console.log(element)
+                element[0][1] == _filter
+              })) {
+                filterSelected.splice(index, 1)
+              }
+            }
+            filterSelected = []
+            filterSelected.push([element.children[1].textContent, _filter])
+            console.log(filterSelected)
+          }
+        }
+
+      if(!elementUndefined) {
+        if(_filterType == "checkbox") {
+          filtering("multi", _filter)
+        } else {
+          filtering("solo", _filter)
+        }
+      } else {
+        filtering("recheck", _filter)
+      }
     })
-
-    if(_filterType != "select") {
-        for(i = 0; i < _filterArray.length; i++) {
-            let filterClone = _template.cloneNode(true)
-            filterClone.classList.add(`${_filter}Cloned`)
-    
-            _filterContainer.appendChild(filterClone)
-        }
-    
-        _template.remove()
-    }
-
-    let filterCloned = document.querySelectorAll(`.${_filter}Cloned`)
-    
-    switch(_filterType) {
-        case "checkbox":
-            filterCloned.forEach((element, key) => {
-                element.children[1].textContent = _filterArray[key]
-            })
-            break;
-
-        case "radio":
-            filterCloned.forEach((element, key) => {
-                element.children[0].value = _filterArray[key]
-                element.children[1].textContent = _filterArray[key]
-            })
-            break;
-
-        case "select":
-            let clear = false
-            if(clear == false) {
-                while(_template.children.length > 0) {
-                    _template.removeChild(_template.firstChild)
-                }
-                clear = true
-            }
-            let resetOpt = document.createElement('option')
-            resetOpt.value = "Reset"
-            resetOpt.innerHTML = "Reset"
-            _template.add(resetOpt)
-            _filterArray.forEach(element => {
-                let opt = document.createElement('option')
-                opt.value = element
-                opt.innerHTML = element
-                _template.add(opt)
-            })
-            break;
-    }
-    activeFilter(globalData, filteredData, _filter, _template, filterCloned, _filterType)
+  })
 }
 
-fetch(`https://v1.nocodeapi.com/ncfnicolas/google_sheets/LyttnfRysyNvHeEr?tabId=${tab}`, requestOptions)
-    .then(response => response.text())
-    .then(result => {
-        let parsedData = JSON.parse(result).data
-        datas = parsedData
+let generationFilter = (
+  globalData,
+  _filterArray,
+  _template,
+  _filter,
+  _filterContainer,
+  _filterType
+) => {
+  globalData.forEach(datas => {
+    if (_filterArray.length == 0) {
+      _filterArray.push(datas[_filter]);
+    } else {
+      if (!_filterArray.find(element => element == datas[_filter])) {
+        _filterArray.push(datas[_filter]);
+      }
+    }
+  });
 
-        creatingElements(parsedData)
+  if (_filterType != "select") {
+    for (i = 0; i < _filterArray.length; i++) {
+      let filterClone = _template.cloneNode(true);
+      filterClone.classList.add("allFilters");
+      filterClone.classList.add(`${_filter}Cloned`);
 
-        generationFilter(parsedData, allFilters.arrayTownFilter, checkboxTemplate, "Ville", townFilters, "checkbox")
+      _filterContainer.appendChild(filterClone);
+    }
 
-        generationFilter(parsedData, allFilters.arrayBackgroundFilter, radioTemplate, "backgroundColor", backgroundFilter, "radio")
+    _template.remove();
+  }
 
-        isLoading = false;
-        loading()
+  let filterCloned = document.querySelectorAll(`.${_filter}Cloned`);
 
-        })
-        .catch(error => console.log('error', error))
+  switch (_filterType) {
+    case "checkbox":
+      filterCloned.forEach((element, key) => {
+        element.children[1].textContent = _filterArray[key];
+      });
+      break;
+      
+      case "radio":
+        filterCloned.forEach((element, key) => {
+          element.children[0].name = _filter
+          element.children[0].value = _filterArray[key];
+          element.children[1].textContent = _filterArray[key];
+      });
+      break;
+
+    case "select":
+      let clear = false;
+      if (clear == false) {
+        while (_template.children.length > 0) {
+          _template.removeChild(_template.firstChild);
+        }
+        clear = true;
+      }
+      let resetOpt = document.createElement("option");
+      resetOpt.value = "Reset";
+      resetOpt.innerHTML = "Reset";
+      _template.add(resetOpt);
+      _filterArray.forEach(element => {
+        let opt = document.createElement("option");
+        opt.value = element;
+        opt.innerHTML = element;
+        _template.add(opt);
+      });
+      break;
+  }
+  activeFilter(
+    _filter,
+    _template,
+    filterCloned,
+    _filterType
+  );
+};
+
+fetch(
+  `https://v1.nocodeapi.com/nicolastr/google_sheets/zIPKRzkQmyYXnwRQ?tabId=${tab}`,
+  requestOptions
+)
+  .then(response => response.text())
+  .then(result => {
+    let parsedData = JSON.parse(result).data;
+    datas = parsedData;
+
+    generationFilter(
+      parsedData,
+      allFilters.arrayTownFilter,
+      checkboxTemplate,
+      "Ville",
+      townFilters,
+      "checkbox"
+    );
+
+    generationFilter(
+      parsedData,
+      allFilters.arrayBackgroundFilter,
+      radioTemplate,
+      "backgroundColor",
+      backgroundFilter,
+      "radio"
+    );
+
+    generationFilter(parsedData, allFilters.arrayTag, checkboxTemplate, "tag", tagFilter, "checkbox")
+
+    creatingElements(parsedData);
+
+    isLoading = false;
+    loading();
+  })
+  .catch(error => console.log("error", error));
